@@ -1,10 +1,50 @@
-version: '3'
+version: '3.8'
+
 services:
-  postgres:
-    image: 'postgres:9.6.1'
+  api:
+    container_name: docker_api
+    build:
+      context: .
+      target: development
+    volumes:
+      - .:/app
+      - /app/node_modules
     ports:
-      - '5432:5432'
+      - ${API_PORT}:${API_PORT}
+    env_file:
+      - .env
+    networks:
+      - backend
+    depends_on:
+      - postgres
+      - redis
+  redis:
+    container_name: docker_redis
+    image: redis
+    ports:
+      - 6379:6379
+    command: redis-server --requirepass redis
+    networks:
+      - backend
+  postgres:
+    container_name: docker_db
+    image: postgres:13-alpine 
+    
+    networks:
+      - backend
+
     environment:
-      POSTGRES_USER: 'test'
-      POSTGRES_PASSWORD: 'test'
-      POSTGRES_DB: 'test'
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+      PG_DATA: /var/lib/postgresql/data
+    ports:
+      - ${PG_HOST_PORT}:${PG_PORT}
+    volumes:
+      - api_db_data:/var/lib/postgresql/data
+
+networks:
+  backend:
+  
+volumes:
+  api_db_data:
